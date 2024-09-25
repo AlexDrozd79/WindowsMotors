@@ -106,7 +106,7 @@
 			// 
 			cmbCommand.DropDownStyle = ComboBoxStyle.DropDownList;
 			cmbCommand.FormattingEnabled = true;
-			cmbCommand.Items.AddRange(new object[] { "MSP_STATUS (101)", "MSP_RAW_IMU (102)" });
+			cmbCommand.Items.AddRange(new object[] { "MSP_STATUS (101)", "MSP_RAW_IMU (102)", "MSP_SERVO (103) " });
 			cmbCommand.Location = new Point(28, 93);
 			cmbCommand.Name = "cmbCommand";
 			cmbCommand.Size = new Size(195, 23);

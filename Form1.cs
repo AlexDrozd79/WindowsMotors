@@ -81,6 +81,9 @@ namespace WindowsMotors
 				case MSPClient.MSPCommand.MSP_RAW_IMU:
 					client.SendCommand(MSPClient.MSPCommand.MSP_RAW_IMU, new byte[] { });
 					break;
+				case MSPClient.MSPCommand.MSP_SERVO:
+					client.SendCommand(MSPClient.MSPCommand.MSP_SERVO, new byte[] { });
+					break;
 			}
 		}
 

@@ -24,6 +24,7 @@ namespace WindowsMotors
 		{
 			MSP_STATUS = 101,
 			MSP_RAW_IMU = 102,
+			MSP_SERVO = 103,
 			MSP_SET_MOTOR = 214
 		}
 
@@ -108,6 +109,9 @@ namespace WindowsMotors
 					break;
 				case MSPCommand.MSP_RAW_IMU:
 					response = MSPRawIMUResponse.FromByteArray(rawData);
+					break;
+				case MSPCommand.MSP_SERVO:
+					response = MSPServoResponse.FromByteArray(rawData);
 					break;
 			}
 			return response;
