@@ -18,6 +18,7 @@ namespace WindowsMotors
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
+			cmbCommand.SelectedIndex = 0;
 			client = new MSPClient();
 			client.onData += Client_onData;
 		}
