@@ -25,6 +25,10 @@ namespace WindowsMotors
 			MSP_STATUS = 101,
 			MSP_RAW_IMU = 102,
 			MSP_SERVO = 103,
+			MSP_MOTOR = 104,
+			MSP_RC = 105,
+			MSP_ATTITUDE = 106,
+			MSP_ALTITUDE  = 109,
 			MSP_SET_MOTOR = 214
 		}
 
@@ -112,6 +116,18 @@ namespace WindowsMotors
 					break;
 				case MSPCommand.MSP_SERVO:
 					response = MSPServoResponse.FromByteArray(rawData);
+					break;
+				case MSPCommand.MSP_MOTOR:
+					response = MspMotorResponse.FromByteArray(rawData);
+					break;
+				case MSPCommand.MSP_RC:
+					response = MspRcResponse.FromByteArray(rawData);
+					break;
+				case MSPCommand.MSP_ATTITUDE:
+					response = MspAttitudeResponse.FromByteArray(rawData);
+					break;
+				case MSPCommand.MSP_ALTITUDE:
+					response = MspAltitudeResponse.FromByteArray(rawData);
 					break;
 			}
 			return response;

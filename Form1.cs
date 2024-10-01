@@ -61,7 +61,7 @@ namespace WindowsMotors
 		{
 
 
-			client.SendCommand(MSPClient.MSPCommand.MSP_SET_MOTOR, new MotorSpeedRequest() { motor1Speed = 1060, motor2Speed = 1060, motor3Speed = 1060, motor4Speed = 1060 });
+			client.SendCommand(MSPClient.MSPCommand.MSP_SET_MOTOR, new MotorSpeedRequest() { motor1Speed = 1500, motor2Speed = 1500, motor3Speed = 1500, motor4Speed = 1500 });
 			Thread.Sleep(5000);
 
 			client.SendCommand(MSPClient.MSPCommand.MSP_SET_MOTOR, new MotorSpeedRequest() { motor1Speed = 1000, motor2Speed = 1000, motor3Speed = 1000, motor4Speed = 1000 });
@@ -83,6 +83,18 @@ namespace WindowsMotors
 					break;
 				case MSPClient.MSPCommand.MSP_SERVO:
 					client.SendCommand(MSPClient.MSPCommand.MSP_SERVO, new byte[] { });
+					break;
+				case MSPClient.MSPCommand.MSP_MOTOR:
+					client.SendCommand(MSPClient.MSPCommand.MSP_MOTOR, new byte[] { });
+					break;
+				case MSPClient.MSPCommand.MSP_RC:
+					client.SendCommand(MSPClient.MSPCommand.MSP_MOTOR, new byte[] { });
+					break;
+				case MSPClient.MSPCommand.MSP_ATTITUDE:
+					client.SendCommand(MSPClient.MSPCommand.MSP_ATTITUDE, new byte[] { });
+					break;
+				case MSPClient.MSPCommand.MSP_ALTITUDE:
+					client.SendCommand(MSPClient.MSPCommand.MSP_ALTITUDE, new byte[] { });
 					break;
 			}
 		}
