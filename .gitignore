@@ -1,0 +1,62 @@
+# Build results
+bin/
+obj/
+[Bb]uild/
+[Bb]uilds/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# Visual Studio directories and files
+.vs/
+.vscode/
+.idea/
+
+# User-specific files
+*.rsuser
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Log, database, and configuration files
+*.log
+*.tlog
+*.sql
+*.sqlite
+*.pdb
+
+# Package directories (NuGet, npm, etc.)
+packages/
+node_modules/
+
+# Generated files
+*.g.*
+*.designer.cs
+Generated_Code/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.bak
+
+# Resharper and Rider files
+_ReSharper*/
+*.DotSettings.user
+.idea/
+
+# Windows-specific files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Security-sensitive files
+*.snk
+*.pfx
+
+# Local test files
+*.local.settings.json
