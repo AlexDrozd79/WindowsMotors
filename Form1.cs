@@ -142,14 +142,22 @@ namespace WindowsFormsApp1
 
         private void button1_Click_1(object sender, EventArgs e)
         {
-            client.SendCommand(MSPClient.MSPCommand.MSP_SET_RAW_RC, new MspSetRawRcRequest()
+            MSPClient.MSPCommand mspCommand = checkBoxAuto.Checked ? MSPClient.MSPCommand.MSP_SET_AUTO_RC : MSPClient.MSPCommand.MSP_SET_RAW_RC;
+            try
             {
-                Aux1 = ushort.Parse(txtAux1.Text),
-                Throttle = ushort.Parse(txtTrottle.Text),
-                Roll = ushort.Parse(txtRoll.Text),
-                Pitch = ushort.Parse(txtPitch.Text),
-                Yaw = ushort.Parse(txtYaw.Text)
-            });
+                client.SendCommand(mspCommand, new MspSetRawRcRequest()
+                {
+                    Aux1 = ushort.Parse(txtAux1.Text),
+                    Throttle = ushort.Parse(txtTrottle.Text),
+                    Roll = ushort.Parse(txtRoll.Text),
+                    Pitch = ushort.Parse(txtPitch.Text),
+                    Yaw = ushort.Parse(txtYaw.Text)
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
  
 
@@ -157,7 +165,7 @@ namespace WindowsFormsApp1
         {
             ushort data = checkOn.Checked ? (ushort)1 : (ushort)0;
 
-            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = data, printDebug = checkPrint.Checked ? (ushort)1 : (ushort)0, delay = 1 });
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = data, printDebug = checkPrint.Checked ? (ushort)1 : (ushort)0, delay =  ushort.Parse(txtDelay.Text) });
         }
  
      
@@ -173,7 +181,7 @@ namespace WindowsFormsApp1
                     client.SendCommand(MSPClient.MSPCommand.MSP_ATTITUDE, new byte[] { });
                     Thread.Sleep(10);
                     client.SendCommand(MSPClient.MSPCommand.MSP_MOTOR, new byte[] { });
-                    Thread.Sleep(80);
+                    Thread.Sleep(10);
                 }
             }
             catch (Exception ex)
@@ -196,6 +204,76 @@ namespace WindowsFormsApp1
                 safeThread.Abort();
                 safeThread = null;
             }
+        }
+
+
+        
+
+        private void buttonStop_Click(object sender, EventArgs e)
+        {
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = 0, printDebug = checkPrint.Checked ? (ushort)1 : (ushort)0, delay = 1 });
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_RAW_RC, new MspSetRawRcRequest()
+            {
+                Aux1 = ushort.Parse(txtAux1.Text),
+                Throttle = 1000,
+                Roll = ushort.Parse(txtRoll.Text),
+                Pitch = ushort.Parse(txtPitch.Text),
+                Yaw = ushort.Parse(txtYaw.Text)
+            });
+        }
+
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            short stepTrottle = 5;
+            short stepMove = 20;
+            Text = e.KeyValue.ToString();
+            switch (e.KeyCode)
+            {
+                case Keys.Up:
+                    txtPitch.Text = (Convert.ToUInt16(txtPitch.Text)+ stepMove).ToString();
+                    break;
+                case Keys.Down:
+                    txtPitch.Text = (Convert.ToUInt16(txtPitch.Text) - stepMove).ToString();
+                    break;
+                case Keys.Left:
+                    txtRoll.Text = (Convert.ToUInt16(txtRoll.Text) - stepMove).ToString();
+                    break;
+                case Keys.Right:
+                    txtRoll.Text = (Convert.ToUInt16(txtRoll.Text) + stepMove).ToString();
+                    break;
+                case Keys.S:
+                    txtTrottle.Text = (Convert.ToUInt16(txtTrottle.Text) + stepTrottle).ToString();
+                    break;
+                case Keys.A:
+                    txtTrottle.Text = (Convert.ToUInt16(txtTrottle.Text) - 15).ToString(); 
+                    break;
+            }
+            MSPClient.MSPCommand mspCommand = checkBoxAuto.Checked ? MSPClient.MSPCommand.MSP_SET_AUTO_RC : MSPClient.MSPCommand.MSP_SET_RAW_RC;
+
+            try
+            {
+                client.SendCommand(mspCommand, new MspSetRawRcRequest()
+                {
+                    Aux1 = ushort.Parse(txtAux1.Text),
+                    Throttle = ushort.Parse(txtTrottle.Text),
+                    Roll = ushort.Parse(txtRoll.Text),
+                    Pitch = ushort.Parse(txtPitch.Text),
+                    Yaw = ushort.Parse(txtYaw.Text)
+                });
+            }
+            catch (Exception ex) {
+                Console.WriteLine( ex.Message );
+            }   
+
+           
+
+
+
+        }
+
+        private void checkBoxAuto_CheckedChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
