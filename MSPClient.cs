@@ -29,9 +29,29 @@ namespace WindowsMotors
         private GattCharacteristic characteristicRead;
 
         public delegate void MSPMessageHandler(MSPClient sender, byte[] rawData);
-
         public event MSPMessageHandler onData;
 
+        private bool cliMode = false;
+        public bool isCLIMode
+        {
+            get
+            {
+                return cliMode;
+            }
+            set
+            {
+                if (useSerial && !serialPort.IsOpen)
+                {
+                    throw new Exception("Serial port is not opened");
+                }
+
+                SwitchToCLIMode(value);
+                cliMode = value;
+            }
+
+        }
+
+      
         public enum MSPCommand
         {
             MSP_ARMING_CONFIG = 61,
@@ -42,7 +62,7 @@ namespace WindowsMotors
             MSP_RC = 105,
             MSP_ATTITUDE = 108,
             MSP_ALTITUDE = 109,
-            MSP_SET_AUTO_RC = 114,
+            MSP_DEBUG_DATA = 114,
             MSP_SET_RAW_RC = 200,
             MSP_SET_MOTOR = 214,
             MSP_SET_TEST = 216
@@ -53,7 +73,7 @@ namespace WindowsMotors
             this.useSerial = useSerial;
             if (useSerial)
             {
-                InitSerialPort("COM3", 150200);
+                InitSerialPort("COM4", 115200); // 150200);
             }
             else
             {
@@ -177,6 +197,9 @@ namespace WindowsMotors
                 case MSPCommand.MSP_SET_RAW_RC:
                     response = MspSetRawRcResponse.FromByteArray(rawData);
                     break;
+                case MSPCommand.MSP_DEBUG_DATA:
+                    response = MspDebugDataResponse.FromByteArray(rawData);
+                    break;
             }
             return response;
         }
@@ -207,16 +230,17 @@ namespace WindowsMotors
             serialPort.ReadTimeout = 1000;
             serialPort.WriteTimeout = 1000;
             serialPort.Open();
+            // serialPort.WriteLine("#");
         }
+
 
         private async void InitBlueToothConnection()
         {
 
-            //byte[] bytes = { 0xBE, 0x68, 0x17, 0x18, 0x85, 0x34, 0x00, 0x00 }; BetaFPV
-            byte[] bytes = { 0x42, 0x28, 0x30, 0x99, 0x65, 0x80, 0x00, 0x00 };
+            byte[] bytes = { 0x0E, 0xD5, 0x14, 0x18, 0x85, 0x34, 0x00, 0x00 }; //BetaFPV
+            //byte[] bytes = { 0x42, 0x28, 0x30, 0x99, 0x65, 0x80, 0x00, 0x00 }; //SpeedyBee
             ulong ID = BitConverter.ToUInt64(bytes, 0);
 
-            //var bleDevice = await BluetoothLEDevice.FromBluetoothAddressAsync(57964256891010);
             var bleDevice = await BluetoothLEDevice.FromBluetoothAddressAsync(ID);
 
             if (bleDevice != null)
@@ -286,22 +310,6 @@ namespace WindowsMotors
             }
             return checksum;
         }
-
-        public static bool ContainsValueGreaterThanZero(byte[] byteArray)
-        {
-            // Check if any element in the array is greater than 0
-            foreach (byte b in byteArray)
-            {
-                if (b > 0)
-                {
-                    return true; // Return true if a value greater than 0 is found
-                }
-            }
-
-            return false; // Return false if no value greater than 0 is found
-        }
-
-
         public async void Read()
         {
             while (continueThread)
@@ -336,9 +344,47 @@ namespace WindowsMotors
             }
         }
 
+        private async void SwitchToCLIMode(bool isCLIMode)
+        {
+            if (useSerial)
+            {
+                if (isCLIMode)
+                {
+                    serialPort.WriteLine("#");
+                }
+                else
+                {
+                    serialPort.WriteLine("exit");
+                    Thread.Sleep(3000);
+                    if (!serialPort.IsOpen)
+                    {
+                        serialPort.Open();
+                    }
+                }
+            }
+            else
+            {
+                if (isCLIMode)
+                {
 
+                    var writeResult = await characteristicWrite.WriteValueAsync(Encoding.ASCII.GetBytes("#").AsBuffer(), GattWriteOption.WriteWithResponse);
+                    if (writeResult == GattCommunicationStatus.Success)
+                    {
+                        System.Diagnostics.Debug.Write("# succesfully sent ");
+                    }
+                }
+                else
+                {
+                    var writeResult = await characteristicWrite.WriteValueAsync(Encoding.ASCII.GetBytes("exit").AsBuffer(), GattWriteOption.WriteWithResponse);
+                    if (writeResult == GattCommunicationStatus.Success)
+                    {
+                        System.Diagnostics.Debug.Write("'exit' succesfully sent ");
 
+                    }
+                }
+            }
 
+        }
 
     }
 }

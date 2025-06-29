@@ -16,13 +16,17 @@ namespace WindowsMotors.DataClasses
 		public ushort Aux2 { get; set; } = 1400;
 		public ushort Aux3 { get; set; } = 1400;
 		public ushort Aux4 { get; set; } = 1400;
+        public ushort Aux5 { get; set; } = 1400;
+        public ushort Aux6 { get; set; } = 1400;
+        public ushort Aux7 { get; set; } = 1400;
+        public ushort Aux8 { get; set; } = 1400;
 
 
 
 
-		public override byte[] ToByteArray()
+        public override byte[] ToByteArray()
 		{
-			byte[] byteArray = new byte[16];
+			byte[] byteArray = new byte[24];
 
 			// Запаковуємо кожне значення каналу в масив корисного навантаження
 			PackChannelValue(Roll, byteArray, 0);
@@ -33,12 +37,15 @@ namespace WindowsMotors.DataClasses
 			PackChannelValue(Aux2, byteArray, 10);
 			PackChannelValue(Aux3, byteArray, 12);
 			PackChannelValue(Aux4, byteArray, 14);
+            PackChannelValue(Aux1, byteArray, 16);
+            PackChannelValue(Aux2, byteArray, 18);
+            PackChannelValue(Aux3, byteArray, 20);
+            PackChannelValue(Aux4, byteArray, 22);
 
 
 
 
-
-			return byteArray;
+            return byteArray;
 		}
 
 		private void PackChannelValue(ushort value, byte[] payload, int index)

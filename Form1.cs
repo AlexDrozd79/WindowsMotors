@@ -16,13 +16,14 @@ using System.Data.Common;
 using Windows.Media.Protection.PlayReady;
 using WindowsMotors;
 using System.Threading;
+using Windows.Storage.Streams;
 
 namespace WindowsFormsApp1
 {
     public partial class Form1 : Form
     {
         MSPClient client;
-        Thread safeThread;
+        PositionAligner monitor;
 
         public Form1()
         {
@@ -34,57 +35,29 @@ namespace WindowsFormsApp1
             cmbCommand.SelectedIndex = 0;
             client = new MSPClient(false);
             client.onData += Client_onData;
+
+            monitor = new PositionAligner(client);
+            monitor.onUpdateUI += AutoAligner_onUpdateUI;
         }
 
         private void Client_onData(MSPClient sender, byte[] rawData)
         {
-            MSPResponse response = MSPClient.ParseResponse(rawData);
-           
-
-            if (safeThread != null)
+            if (client.isCLIMode || (rawData.Length == 4 && Encoding.ASCII.GetString(rawData) == "exit"))
             {
-                if (response is MspAttitudeResponse)
+                string strOutput = Encoding.ASCII.GetString(rawData);
+                this.Invoke(new Action(() =>
                 {
-                    MspAttitudeResponse attitudeResponse = (MspAttitudeResponse)response;
-                    this.Invoke(new Action(() =>
-                    {
-                        txtAttitude.Text = attitudeResponse.ToString();
-                    }));
-
-                    if (Math.Abs(attitudeResponse.Roll) > 20 || Math.Abs(attitudeResponse.Pitch) > 20)
-                    {
-                        txtAttitude.ForeColor = Color.Red;
-                    }
-                    else
-                    {
-                        txtAttitude.ForeColor = Color.Black;
-                    }
-                }
-                else if (response is MspAltitudeResponse)
-                {
-                    MspAltitudeResponse altitudeResponse = (MspAltitudeResponse)response;
-                    this.Invoke(new Action(() =>
-                    {
-                        txtAltitude.Text = altitudeResponse.ToString();
-                    }));
-                    
-                }
-                else if (response is MspMotorResponse)
-                {
-                    MspMotorResponse motorResponse = (MspMotorResponse)response;
-                    this.Invoke(new Action(() =>
-                    {
-                        txtMotor.Text = motorResponse.ToString();
-                    }));
-
-                }
+                    txtOutput.AppendText(strOutput + Environment.NewLine);
+                }));
             }
             else
             {
+                MSPResponse response = MSPClient.ParseResponse(rawData);
                 this.Invoke(new Action(() =>
                 {
                     txtOutput.AppendText(response.ToString() + Environment.NewLine);
                 }));
+                monitor.ProcessResponse(response);
             }
 
         }
@@ -119,6 +92,9 @@ namespace WindowsFormsApp1
                 case MSPClient.MSPCommand.MSP_ALTITUDE:
                     client.SendCommand(MSPClient.MSPCommand.MSP_ALTITUDE, new byte[] { });
                     break;
+                case MSPClient.MSPCommand.MSP_DEBUG_DATA:
+                    client.SendCommand(MSPClient.MSPCommand.MSP_DEBUG_DATA, new byte[] { });
+                    break;
             }
         }
 
@@ -142,10 +118,9 @@ namespace WindowsFormsApp1
 
         private void button1_Click_1(object sender, EventArgs e)
         {
-            MSPClient.MSPCommand mspCommand = checkBoxAuto.Checked ? MSPClient.MSPCommand.MSP_SET_AUTO_RC : MSPClient.MSPCommand.MSP_SET_RAW_RC;
             try
             {
-                client.SendCommand(mspCommand, new MspSetRawRcRequest()
+                client.SendCommand(MSPClient.MSPCommand.MSP_SET_RAW_RC, new MspSetRawRcRequest()
                 {
                     Aux1 = ushort.Parse(txtAux1.Text),
                     Throttle = ushort.Parse(txtTrottle.Text),
@@ -153,61 +128,22 @@ namespace WindowsFormsApp1
                     Pitch = ushort.Parse(txtPitch.Text),
                     Yaw = ushort.Parse(txtYaw.Text)
                 });
+                monitor.Trottle = ushort.Parse(txtTrottle.Text);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
+
         }
- 
+
 
         private void checkOn_CheckedChanged(object sender, EventArgs e)
         {
             ushort data = checkOn.Checked ? (ushort)1 : (ushort)0;
 
-            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = data, printDebug = checkPrint.Checked ? (ushort)1 : (ushort)0, delay =  ushort.Parse(txtDelay.Text) });
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = data, printDebug = checkPrint.Checked ? (ushort)1 : (ushort)0, delay = ushort.Parse(txtDelay.Text) });
         }
- 
-     
-
-        private void ProcessSafeMode()
-        {
-            try
-            {
-                while (true)
-                {
-                    client.SendCommand(MSPClient.MSPCommand.MSP_ALTITUDE, new byte[] { });
-                    Thread.Sleep(10);
-                    client.SendCommand(MSPClient.MSPCommand.MSP_ATTITUDE, new byte[] { });
-                    Thread.Sleep(10);
-                    client.SendCommand(MSPClient.MSPCommand.MSP_MOTOR, new byte[] { });
-                    Thread.Sleep(10);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.ToString());
-            }   
-
-           
-        }
-
-        private void checkSafeMode_CheckedChanged(object sender, EventArgs e)
-        {
-            if (checkSafeMode.Checked)
-            {
-                safeThread = new Thread(ProcessSafeMode);
-                safeThread.Start();
-            }
-            else
-            {
-                safeThread.Abort();
-                safeThread = null;
-            }
-        }
-
-
-        
 
         private void buttonStop_Click(object sender, EventArgs e)
         {
@@ -220,6 +156,7 @@ namespace WindowsFormsApp1
                 Pitch = ushort.Parse(txtPitch.Text),
                 Yaw = ushort.Parse(txtYaw.Text)
             });
+            monitor.Trottle = ushort.Parse(txtTrottle.Text);
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -230,7 +167,7 @@ namespace WindowsFormsApp1
             switch (e.KeyCode)
             {
                 case Keys.Up:
-                    txtPitch.Text = (Convert.ToUInt16(txtPitch.Text)+ stepMove).ToString();
+                    txtPitch.Text = (Convert.ToUInt16(txtPitch.Text) + stepMove).ToString();
                     break;
                 case Keys.Down:
                     txtPitch.Text = (Convert.ToUInt16(txtPitch.Text) - stepMove).ToString();
@@ -245,14 +182,13 @@ namespace WindowsFormsApp1
                     txtTrottle.Text = (Convert.ToUInt16(txtTrottle.Text) + stepTrottle).ToString();
                     break;
                 case Keys.A:
-                    txtTrottle.Text = (Convert.ToUInt16(txtTrottle.Text) - 15).ToString(); 
+                    txtTrottle.Text = (Convert.ToUInt16(txtTrottle.Text) - 15).ToString();
                     break;
             }
-            MSPClient.MSPCommand mspCommand = checkBoxAuto.Checked ? MSPClient.MSPCommand.MSP_SET_AUTO_RC : MSPClient.MSPCommand.MSP_SET_RAW_RC;
 
             try
             {
-                client.SendCommand(mspCommand, new MspSetRawRcRequest()
+                client.SendCommand(MSPClient.MSPCommand.MSP_SET_RAW_RC, new MspSetRawRcRequest()
                 {
                     Aux1 = ushort.Parse(txtAux1.Text),
                     Throttle = ushort.Parse(txtTrottle.Text),
@@ -260,20 +196,48 @@ namespace WindowsFormsApp1
                     Pitch = ushort.Parse(txtPitch.Text),
                     Yaw = ushort.Parse(txtYaw.Text)
                 });
+                monitor.Trottle = ushort.Parse(txtTrottle.Text);
             }
-            catch (Exception ex) {
-                Console.WriteLine( ex.Message );
-            }   
-
-           
-
-
-
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
-        private void checkBoxAuto_CheckedChanged(object sender, EventArgs e)
-        {
 
+
+        private void checkBoxCLI_CheckedChanged(object sender, EventArgs e)
+        {
+            client.isCLIMode = checkBoxCLI.Checked;
+        }
+
+        private void checkBoxAlign_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkMonitor.Checked)
+            {
+                monitor.Monitor();
+            }
+            else
+            {
+                monitor.Stop();
+            }
+          
+        }
+
+        private void AutoAligner_onUpdateUI(MspDebugDataResponse response)
+        {
+            this.Invoke(new Action(() =>
+            {
+                labelPitch.Text = response.Pitch.ToString();
+                labelRoll.Text = response.Roll.ToString();
+                labelYaw.Text = response.Yaw.ToString();
+                labelSetpointRoll.Text = response.pidSetpointRoll.ToString();
+                labelSetpointPitch.Text = response.pidSetpointPitch.ToString();
+                labelSetpointYaw.Text = response.pidSetpointYaw.ToString();
+                labelSumRoll.Text = response.pidSumRoll.ToString();
+                labelSumPitch.Text = response.pidSumPitch.ToString();
+                labelSumYaw.Text = response.pidSumYaw.ToString();
+            }));
         }
     }
 }
