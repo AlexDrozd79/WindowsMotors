@@ -207,10 +207,19 @@ namespace WindowsMotors
 
         private static Net LoadNet(string onnxPath)
         {
-            var net = CvDnn.ReadNet(onnxPath);
-            // Без спроб CUDA — стабільно на будь-якій збірці
-            net.SetPreferableBackend(Backend.OPENCV);
-            net.SetPreferableTarget(Target.CPU);
+            Net net = CvDnn.ReadNet(onnxPath);
+
+            try
+            {
+                net.SetPreferableBackend(Backend.CUDA);
+                net.SetPreferableTarget(Target.CUDA_FP16);
+            }
+            catch
+            {
+                net.SetPreferableBackend(Backend.OPENCV);
+                net.SetPreferableTarget(Target.CPU);
+            }
+
             return net;
         }
 

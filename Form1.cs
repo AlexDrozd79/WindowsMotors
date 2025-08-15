@@ -249,7 +249,7 @@ namespace WindowsFormsApp1
             var view = new WindowsMotors.OpenCVView(
                 onnxPath: "config_files/yolov5s.onnx",
                 classesPath: "config_files/classes.txt",
-                cameraIndex: 0,
+                cameraIndex: 1,
                 gstreamerPipeline: null,
                 showWindow: true);
 
