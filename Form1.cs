@@ -53,7 +53,7 @@ namespace WindowsFormsApp1
             else
             {
                 MSPResponse response = MSPClient.ParseResponse(rawData);
-                this.Invoke(new Action(() =>
+                   this.Invoke(new Action(() =>
                 {
                     txtOutput.AppendText(response.ToString() + Environment.NewLine);
                 }));
@@ -228,6 +228,10 @@ namespace WindowsFormsApp1
         {
             this.Invoke(new Action(() =>
             {
+                if (response == null)
+                {
+                    return;
+                }
                 labelPitch.Text = response.Pitch.ToString();
                 labelRoll.Text = response.Roll.ToString();
                 labelYaw.Text = response.Yaw.ToString();
@@ -238,6 +242,18 @@ namespace WindowsFormsApp1
                 labelSumPitch.Text = response.pidSumPitch.ToString();
                 labelSumYaw.Text = response.pidSumYaw.ToString();
             }));
+        }
+
+        private void buttonView_Click(object sender, EventArgs e)
+        {
+            var view = new WindowsMotors.OpenCVView(
+                onnxPath: "config_files/yolov5s.onnx",
+                classesPath: "config_files/classes.txt",
+                cameraIndex: 0,
+                gstreamerPipeline: null,
+                showWindow: true);
+
+            view.Start();
         }
     }
 }

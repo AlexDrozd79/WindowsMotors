@@ -42,7 +42,7 @@ namespace WindowsFormsApp1
                 while (true)
                 {
                     client.SendCommand(MSPClient.MSPCommand.MSP_DEBUG_DATA, new byte[] { });
-                    Thread.Sleep(200);
+                    Thread.Sleep(100);
                     onUpdateUI?.Invoke(debugData);
                 }
             });
