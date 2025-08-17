@@ -283,18 +283,22 @@ namespace WindowsFormsApp1
                         frameID = 0;
                     }
                     frameID ++;
-                    int deltaX = img.Width / 2 - (detection.Box.Left + detection.Box.Width / 2);
-                    int deltaY = img.Height / 2 - (detection.Box.Top + detection.Box.Height / 2);
+                    int deltaYaw = img.Width / 2 - (detection.Box.Left + detection.Box.Width / 2);
+                    int deltaPitch = img.Height / 2 - (detection.Box.Top + detection.Box.Height / 2);
 
                     this.Invoke(new Action(() =>
                     {
-                        Text = $"$Delta X: {deltaX}  frameID {frameID}";
+                        Text = $"$Delta X: {deltaYaw}  frameID {frameID}";
                     }));
 
                     client.SendCommand(MSPClient.MSPCommand.MSP_SET_AUTOPILOT_DATA, new MspSetAutopilotDataRequest()
                     {
-                        DeltaX = (short)deltaX,
-                        DeltaY =  frameID
+                        DeltaYaw = (short)deltaYaw,
+                        DeltaPitch = (short)deltaPitch,
+                        InitialYaw = 100,
+                        InitialPitch = 100,
+                        FrameID = frameID
+                        
                     });
                     Thread.Sleep(80);
 

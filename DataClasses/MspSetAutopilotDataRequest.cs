@@ -4,15 +4,21 @@ namespace WindowsMotors.DataClasses
 {
     public class MspSetAutopilotDataRequest : MSPRequest
     {
-        public short DeltaX { get; set; } = 0;
-        public short DeltaY { get; set; } = 0;
+        public short DeltaYaw { get; set; } = 0;
+        public short DeltaPitch { get; set; } = 0;
+        public short InitialYaw { get; set; } = 0;
+        public short InitialPitch { get; set; } = 0;
+        public short FrameID { get; set; } = 0;
 
         public override byte[] ToByteArray()
         {
-            byte[] payload = new byte[4];
+            byte[] payload = new byte[10];
 
-            PackShortValue(DeltaX, payload, 0);
-            PackShortValue(DeltaY, payload, 2);
+            PackShortValue(DeltaYaw, payload, 0);
+            PackShortValue(DeltaPitch, payload, 2);
+            PackShortValue(InitialYaw, payload, 4);
+            PackShortValue(InitialPitch, payload, 6);
+            PackShortValue(FrameID, payload, 8);
 
             return payload;
         }
