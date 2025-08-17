@@ -37,13 +37,10 @@ namespace WindowsMotors.DataClasses
 			PackChannelValue(Aux2, byteArray, 10);
 			PackChannelValue(Aux3, byteArray, 12);
 			PackChannelValue(Aux4, byteArray, 14);
-            PackChannelValue(Aux1, byteArray, 16);
-            PackChannelValue(Aux2, byteArray, 18);
-            PackChannelValue(Aux3, byteArray, 20);
-            PackChannelValue(Aux4, byteArray, 22);
-
-
-
+            PackChannelValue(Aux5, byteArray, 16);
+            PackChannelValue(Aux6, byteArray, 18);
+            PackChannelValue(Aux7, byteArray, 20);
+            PackChannelValue(Aux8, byteArray, 22);
 
             return byteArray;
 		}

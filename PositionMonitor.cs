@@ -11,10 +11,10 @@ using System.IO;
 
 namespace WindowsFormsApp1
 {
-    internal class PositionAligner
+    internal class PositionMonitor
     {
         private MSPClient client;
-        private Thread thAutoPilot;
+        private Thread thMonitor;
         private List<string> log = new List<string>();
 
 
@@ -26,9 +26,12 @@ namespace WindowsFormsApp1
 
         public event UIUpdateHandler onUpdateUI;
 
- 
+        public bool isActive
+        { 
+            get { return thMonitor != null; }
+        }
 
-        public PositionAligner(MSPClient client)
+        public PositionMonitor(MSPClient client)
         {
             this.client = client;
         }
@@ -37,7 +40,7 @@ namespace WindowsFormsApp1
 
         public void Monitor()
         {
-            thAutoPilot = new Thread(() =>
+            thMonitor = new Thread(() =>
             {
                 while (true)
                 {
@@ -47,15 +50,15 @@ namespace WindowsFormsApp1
                 }
             });
             
-            thAutoPilot.Start();
+            thMonitor.Start();
         }
 
         public void Stop()
         {
-            if (thAutoPilot != null && thAutoPilot.IsAlive)
+            if (thMonitor != null && thMonitor.IsAlive)
             {
-                thAutoPilot.Abort();
-                thAutoPilot = null;
+                thMonitor.Abort();
+                thMonitor = null;
             }
         }
 

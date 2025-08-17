@@ -17,13 +17,16 @@ using Windows.Media.Protection.PlayReady;
 using WindowsMotors;
 using System.Threading;
 using Windows.Storage.Streams;
+using Windows.Web.Http.Headers;
+using Windows.Graphics.Holographic;
 
 namespace WindowsFormsApp1
 {
     public partial class Form1 : Form
     {
         MSPClient client;
-        PositionAligner monitor;
+        PositionMonitor monitor;
+        RcMonitor rcMonitor;
 
         public Form1()
         {
@@ -36,8 +39,15 @@ namespace WindowsFormsApp1
             client = new MSPClient(false);
             client.onData += Client_onData;
 
-            monitor = new PositionAligner(client);
+            monitor = new PositionMonitor(client);
             monitor.onUpdateUI += AutoAligner_onUpdateUI;
+
+            rcMonitor = new RcMonitor(client);
+        }
+
+        private void RcMonitor_onDataUpdate(MspRcResponse rcResponse)
+        {
+
         }
 
         private void Client_onData(MSPClient sender, byte[] rawData)
@@ -53,11 +63,12 @@ namespace WindowsFormsApp1
             else
             {
                 MSPResponse response = MSPClient.ParseResponse(rawData);
-                   this.Invoke(new Action(() =>
-                {
-                    txtOutput.AppendText(response.ToString() + Environment.NewLine);
-                }));
+                this.Invoke(new Action(() =>
+             {
+                 txtOutput.AppendText(response.ToString() + Environment.NewLine);
+             }));
                 monitor.ProcessResponse(response);
+                rcMonitor.ProcessResponse(response);
             }
 
         }
@@ -126,7 +137,8 @@ namespace WindowsFormsApp1
                     Throttle = ushort.Parse(txtTrottle.Text),
                     Roll = ushort.Parse(txtRoll.Text),
                     Pitch = ushort.Parse(txtPitch.Text),
-                    Yaw = ushort.Parse(txtYaw.Text)
+                    Yaw = ushort.Parse(txtYaw.Text),
+                    Aux5 = 1750,
                 });
                 monitor.Trottle = ushort.Parse(txtTrottle.Text);
             }
@@ -221,7 +233,7 @@ namespace WindowsFormsApp1
             {
                 monitor.Stop();
             }
-          
+
         }
 
         private void AutoAligner_onUpdateUI(MspDebugDataResponse response)
@@ -253,7 +265,42 @@ namespace WindowsFormsApp1
                 gstreamerPipeline: null,
                 showWindow: true);
 
+            view.OnDetect += View_OnDetect;
+
             view.Start();
+        }
+
+        private static short frameID = 0;
+
+        private void View_OnDetect(OpenCvSharp.Mat img, List<OpenCVView.Detection> detections, List<string> classNames)
+        {
+            foreach (var detection in detections)
+            {
+                if (detection.ClassId == 41)
+                {
+                    if (frameID == short.MaxValue)
+                    {
+                        frameID = 0;
+                    }
+                    frameID ++;
+                    int deltaX = img.Width / 2 - (detection.Box.Left + detection.Box.Width / 2);
+                    int deltaY = img.Height / 2 - (detection.Box.Top + detection.Box.Height / 2);
+
+                    this.Invoke(new Action(() =>
+                    {
+                        Text = $"$Delta X: {deltaX}  frameID {frameID}";
+                    }));
+
+                    client.SendCommand(MSPClient.MSPCommand.MSP_SET_AUTOPILOT_DATA, new MspSetAutopilotDataRequest()
+                    {
+                        DeltaX = (short)deltaX,
+                        DeltaY =  frameID
+                    });
+                    Thread.Sleep(80);
+
+                }
+            }
+
         }
     }
 }

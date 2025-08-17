@@ -63,6 +63,7 @@ namespace WindowsMotors
             MSP_ATTITUDE = 108,
             MSP_ALTITUDE = 109,
             MSP_DEBUG_DATA = 114,
+            MSP_SET_AUTOPILOT_DATA = 115,
             MSP_SET_RAW_RC = 200,
             MSP_SET_MOTOR = 214,
             MSP_SET_TEST = 216
@@ -123,7 +124,7 @@ namespace WindowsMotors
                 var writeResult = await characteristicWrite.WriteValueAsync(bytesToSend.ToArray().AsBuffer(), GattWriteOption.WriteWithResponse);
                 if (writeResult == GattCommunicationStatus.Success)
                 {
-                    System.Diagnostics.Debug.Write("succesfully sent command " + bytesToSend.ToString());
+                   // System.Diagnostics.Debug.Write("succesfully sent command " + bytesToSend.ToString());
                 }
             }
 
@@ -146,7 +147,6 @@ namespace WindowsMotors
             if (useSerial)
             {
                 serialPort.Write(bytesToSend.ToArray(), 0, bytesToSend.ToArray().Length);
-                System.Diagnostics.Debug.WriteLine("succesfully sent command to serial port" + BitConverter.ToString(bytesToSend.ToArray()).Replace("-", " "));
             }
             else
             {
@@ -200,6 +200,7 @@ namespace WindowsMotors
                 case MSPCommand.MSP_DEBUG_DATA:
                     response = MspDebugDataResponse.FromByteArray(rawData);
                     break;
+                
             }
             return response;
         }
@@ -325,10 +326,7 @@ namespace WindowsMotors
 
                             // Read the data into the buffer
                             int bytesRead = serialPort.Read(buffer, 0, buffer.Length);
-
-                            // Display the byte array in hexadecimal format
-                            System.Diagnostics.Debug.WriteLine("Received {0} bytes: {1}", bytesRead, BitConverter.ToString(buffer));
-
+                            
                             onData?.Invoke(this, buffer);
                         }
                     }

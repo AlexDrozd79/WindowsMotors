@@ -86,8 +86,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataClasses\MspDebugDataResponse.cs" />
+    <Compile Include="DataClasses\MspSetAutopilotDataRequest.cs" />
     <Compile Include="OpenCVView.cs" />
-    <Compile Include="PositionAligner.cs" />
+    <Compile Include="RcMonitor.cs" />
+    <Compile Include="PositionMonitor.cs" />
     <Compile Include="DataClasses\CustomRequest.cs" />
     <Compile Include="DataClasses\MspArmingConfigResponse.cs" />
     <Compile Include="DataClasses\MspSetRawRcResponse.cs" />

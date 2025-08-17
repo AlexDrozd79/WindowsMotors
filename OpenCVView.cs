@@ -42,7 +42,12 @@ namespace WindowsMotors
         private volatile bool _running;
         private readonly object _lock = new object();
 
+        // кадр після рендеру (як і було)
         public event Action<Mat> FrameReady;
+
+        // ► делегат + івент для детекцій
+        public delegate void OnDetectDelegate(Mat img, List<Detection> detections, List<string> classNames);
+        public event OnDetectDelegate OnDetect;
 
         public OpenCVView(string onnxPath,
                           string classesPath,
@@ -146,6 +151,17 @@ namespace WindowsMotors
                     List<Detection> detections = Detect(display, _net, _classNames);
                     DrawDetections(display, detections, _classNames);
 
+                    // ► виклик івента після детекції
+                    if (OnDetect != null)
+                    {
+                        Mat detImg = display.Clone(); // захист від життєвого циклу матриці
+                        try
+                        {
+                            OnDetect(detImg, new List<Detection>(detections), _classNames);
+                        }
+                        finally { detImg.Dispose(); }
+                    }
+
                     frameCount++; totalFrames++;
                     var elapsed = (DateTime.UtcNow - tick).TotalMilliseconds;
                     if (elapsed >= 1000.0)
@@ -244,7 +260,8 @@ namespace WindowsMotors
             return cap;
         }
 
-        private struct Detection
+        // зробив public, щоб тип був доступний підписникам івента
+        public struct Detection
         {
             public int ClassId;
             public float Confidence;
@@ -330,7 +347,7 @@ namespace WindowsMotors
                     boxes.Add(new Rect(left, top, width, height));
                 }
 
-                // ---- Власний NMS (жадібний) ----
+                // власний NMS
                 List<int> kept = Nms(boxes, confidences, SCORE_THRESHOLD, NMS_THRESHOLD);
 
                 for (int k = 0; k < kept.Count; k++)
@@ -356,6 +373,7 @@ namespace WindowsMotors
 
         private static void DrawDetections(Mat img, List<Detection> detections, List<string> classNames)
         {
+            Cv2.Rectangle(img, new Rect(new Point(img.Width/2-2, img.Height/2-2), new Size(4, 4)), new Scalar(34, 139, 34), -1);
             for (int i = 0; i < detections.Count; i++)
             {
                 Detection d = detections[i];
@@ -385,7 +403,6 @@ namespace WindowsMotors
             if (boxes == null || scores == null || boxes.Count == 0 || scores.Count != boxes.Count)
                 return idxs;
 
-            // залишаємо тільки ті, що проходять по score
             var order = Enumerable.Range(0, boxes.Count)
                                   .Where(i => scores[i] >= scoreThresh)
                                   .OrderByDescending(i => scores[i])
