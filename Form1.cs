@@ -25,8 +25,7 @@ namespace WindowsFormsApp1
     public partial class Form1 : Form
     {
         MSPClient client;
-        PositionMonitor monitor;
-        RcMonitor rcMonitor;
+
 
         public Form1()
         {
@@ -39,14 +38,7 @@ namespace WindowsFormsApp1
             client = new MSPClient(false);
             client.onData += Client_onData;
 
-            monitor = new PositionMonitor(client);
-            monitor.onUpdateUI += AutoAligner_onUpdateUI;
-
-            rcMonitor = new RcMonitor(client);
-        }
-
-        private void RcMonitor_onDataUpdate(MspRcResponse rcResponse)
-        {
+           
 
         }
 
@@ -67,8 +59,7 @@ namespace WindowsFormsApp1
              {
                  txtOutput.AppendText(response.ToString() + Environment.NewLine);
              }));
-                monitor.ProcessResponse(response);
-                rcMonitor.ProcessResponse(response);
+
             }
 
         }
@@ -140,7 +131,6 @@ namespace WindowsFormsApp1
                     Yaw = ushort.Parse(txtYaw.Text),
                     Aux5 = 1750,
                 });
-                monitor.Trottle = ushort.Parse(txtTrottle.Text);
             }
             catch (Exception ex)
             {
@@ -148,18 +138,16 @@ namespace WindowsFormsApp1
             }
 
         }
-
-
         private void checkOn_CheckedChanged(object sender, EventArgs e)
         {
             ushort data = checkOn.Checked ? (ushort)1 : (ushort)0;
 
-            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = data, printDebug = checkPrint.Checked ? (ushort)1 : (ushort)0, delay = ushort.Parse(txtDelay.Text) });
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = data, delay = ushort.Parse(txtDelay.Text) });
         }
 
         private void buttonStop_Click(object sender, EventArgs e)
         {
-            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = 0, printDebug = checkPrint.Checked ? (ushort)1 : (ushort)0, delay = 1 });
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = 0,  delay = 1 });
             client.SendCommand(MSPClient.MSPCommand.MSP_SET_RAW_RC, new MspSetRawRcRequest()
             {
                 Aux1 = ushort.Parse(txtAux1.Text),
@@ -168,7 +156,7 @@ namespace WindowsFormsApp1
                 Pitch = ushort.Parse(txtPitch.Text),
                 Yaw = ushort.Parse(txtYaw.Text)
             });
-            monitor.Trottle = ushort.Parse(txtTrottle.Text);
+
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -208,7 +196,6 @@ namespace WindowsFormsApp1
                     Pitch = ushort.Parse(txtPitch.Text),
                     Yaw = ushort.Parse(txtYaw.Text)
                 });
-                monitor.Trottle = ushort.Parse(txtTrottle.Text);
             }
             catch (Exception ex)
             {
@@ -221,39 +208,6 @@ namespace WindowsFormsApp1
         private void checkBoxCLI_CheckedChanged(object sender, EventArgs e)
         {
             client.isCLIMode = checkBoxCLI.Checked;
-        }
-
-        private void checkBoxAlign_CheckedChanged(object sender, EventArgs e)
-        {
-            if (checkMonitor.Checked)
-            {
-                monitor.Monitor();
-            }
-            else
-            {
-                monitor.Stop();
-            }
-
-        }
-
-        private void AutoAligner_onUpdateUI(MspDebugDataResponse response)
-        {
-            this.Invoke(new Action(() =>
-            {
-                if (response == null)
-                {
-                    return;
-                }
-                labelPitch.Text = response.Pitch.ToString();
-                labelRoll.Text = response.Roll.ToString();
-                labelYaw.Text = response.Yaw.ToString();
-                labelSetpointRoll.Text = response.pidSetpointRoll.ToString();
-                labelSetpointPitch.Text = response.pidSetpointPitch.ToString();
-                labelSetpointYaw.Text = response.pidSetpointYaw.ToString();
-                labelSumRoll.Text = response.pidSumRoll.ToString();
-                labelSumPitch.Text = response.pidSumPitch.ToString();
-                labelSumYaw.Text = response.pidSumYaw.ToString();
-            }));
         }
 
         private void buttonView_Click(object sender, EventArgs e)
@@ -274,9 +228,10 @@ namespace WindowsFormsApp1
 
         private void View_OnDetect(OpenCvSharp.Mat img, List<OpenCVView.Detection> detections, List<string> classNames)
         {
+            bool isDetected = false;
             foreach (var detection in detections)
             {
-                if (detection.ClassId == 41)
+                if (detection.ClassId == 74)
                 {
                     if (frameID == short.MaxValue)
                     {
@@ -284,7 +239,7 @@ namespace WindowsFormsApp1
                     }
                     frameID ++;
                     int deltaYaw = img.Width / 2 - (detection.Box.Left + detection.Box.Width / 2);
-                    int deltaPitch = img.Height / 2 - (detection.Box.Top + detection.Box.Height / 2);
+                    int deltaPitch =  (detection.Box.Top + detection.Box.Height / 2) - img.Height / 2 - 160;
 
                     this.Invoke(new Action(() =>
                     {
@@ -297,14 +252,21 @@ namespace WindowsFormsApp1
                         DeltaPitch = (short)deltaPitch,
                         InitialYaw = 100,
                         InitialPitch = 100,
-                        FrameID = frameID
+                        FrameID = frameID,
+                        ModeID = 1
                         
                     });
+                    isDetected = true;
                     Thread.Sleep(80);
+
+                }
+                if (!isDetected)
+                {
 
                 }
             }
 
         }
+ 
     }
 }

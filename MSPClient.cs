@@ -231,7 +231,7 @@ namespace WindowsMotors
             serialPort.ReadTimeout = 1000;
             serialPort.WriteTimeout = 1000;
             serialPort.Open();
-            // serialPort.WriteLine("#");
+            //serialPort.WriteLine("#");
         }
 
 
