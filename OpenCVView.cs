@@ -33,6 +33,7 @@ namespace WindowsMotors
         private readonly string _gstreamerPipeline; // null якщо не використовуємо
         private readonly int _cameraIndex;          // якщо pipeline == null
         private readonly bool _showWindow;
+        private readonly bool _justDisplay;
 
         private VideoCapture _capture;
         private Net _net;
@@ -53,13 +54,15 @@ namespace WindowsMotors
                           string classesPath,
                           int cameraIndex = 0,
                           string gstreamerPipeline = null,
-                          bool showWindow = true)
+                          bool showWindow = true,
+                          bool justDisplay = false)
         {
             _onnxPath = onnxPath;
             _classesPath = classesPath;
             _cameraIndex = cameraIndex;
             _gstreamerPipeline = gstreamerPipeline;
             _showWindow = showWindow;
+            _justDisplay = justDisplay;
         }
 
         public bool Start()
@@ -119,6 +122,7 @@ namespace WindowsMotors
             Mat frame = null;
             Mat display = null;
             Window window = null;
+            VideoWriter writer = null; // ← додаємо writer
 
             try
             {
@@ -128,9 +132,28 @@ namespace WindowsMotors
                 frame = new Mat();
                 display = new Mat();
 
+                // ► створюємо записник відео
+                string path = @"C:\My\WindowsMotors\output.avi";
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+
+                int w = (int)_capture.FrameWidth;
+                int h = (int)_capture.FrameHeight;
+                Size size = new Size(w, h);
+                int fourcc = FourCC.XVID; // MJPG — надійний у Windows
+                double fps = _capture.Fps > 0 ? _capture.Fps : 30.0;
+
+                writer = new VideoWriter(path, fourcc, fps, size, true);
+                if (!writer.IsOpened())
+                {
+                    MessageBox.Show($"❌ Не вдалося відкрити файл для запису: {path}");
+                    return;
+                }
+                Console.WriteLine($"🎥 Запис відео {w}x{h} @ {fps:F1}fps → {path}");
+
+
                 int frameCount = 0;
                 int totalFrames = 0;
-                double fps = -1;
+                double fpsNow = -1;
                 var tick = DateTime.UtcNow;
 
                 while (_running)
@@ -146,43 +169,37 @@ namespace WindowsMotors
                         continue;
                     }
 
+                    // ► Запис кадру у файл
+                    writer.Write(frame);
+
                     frame.CopyTo(display);
 
-                    List<Detection> detections = Detect(display, _net, _classNames);
-                    DrawDetections(display, detections, _classNames);
-
-                    // ► виклик івента після детекції
-                    if (OnDetect != null)
+                    if (!_justDisplay)
                     {
-                        Mat detImg = display.Clone(); // захист від життєвого циклу матриці
-                        try
-                        {
-                            OnDetect(detImg, new List<Detection>(detections), _classNames);
-                        }
-                        finally { detImg.Dispose(); }
+                        List<Detection> detections = Detect(display, _net, _classNames);
+                        DrawDetections(display, detections, _classNames);
+
+                        OnDetect?.Invoke(display.Clone(), new List<Detection>(detections), _classNames);
                     }
+
+                   
 
                     frameCount++; totalFrames++;
                     var elapsed = (DateTime.UtcNow - tick).TotalMilliseconds;
                     if (elapsed >= 1000.0)
                     {
-                        fps = frameCount * 1000.0 / elapsed;
+                        fpsNow = frameCount * 1000.0 / elapsed;
                         frameCount = 0;
                         tick = DateTime.UtcNow;
                     }
-                    if (fps > 0)
+                    if (fpsNow > 0)
                     {
-                        Cv2.PutText(display, "FPS: " + fps.ToString("F2"),
+                        Cv2.PutText(display, "FPS: " + fpsNow.ToString("F2"),
                             new Point(10, 25), HersheyFonts.HersheySimplex, 0.8,
                             new Scalar(0, 0, 255), 2);
                     }
 
-                    if (FrameReady != null)
-                    {
-                        Mat delivered = display.Clone();
-                        try { FrameReady(delivered); }
-                        finally { delivered.Dispose(); }
-                    }
+                    FrameReady?.Invoke(display.Clone());
 
                     if (_showWindow && window != null)
                     {
@@ -202,9 +219,10 @@ namespace WindowsMotors
             }
             finally
             {
-                if (window != null) window.Dispose();
-                if (display != null) display.Dispose();
-                if (frame != null) frame.Dispose();
+                writer?.Release(); // ← закриваємо файл
+                window?.Dispose();
+                display?.Dispose();
+                frame?.Dispose();
             }
         }
 

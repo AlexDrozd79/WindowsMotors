@@ -74,7 +74,7 @@ namespace WindowsMotors
             this.useSerial = useSerial;
             if (useSerial)
             {
-                InitSerialPort("COM4", 115200); // 150200);
+                InitSerialPort("COM3", 115200); // 150200);
             }
             else
             {
@@ -238,7 +238,7 @@ namespace WindowsMotors
         private async void InitBlueToothConnection()
         {
 
-            byte[] bytes = { 0x0E, 0xD5, 0x14, 0x18, 0x85, 0x34, 0x00, 0x00 }; //BetaFPV
+            byte[] bytes = { 0x9A, 0xE2, 0x14, 0x18, 0x85, 0x34, 0x00, 0x00 }; //BetaFPV
             //byte[] bytes = { 0x42, 0x28, 0x30, 0x99, 0x65, 0x80, 0x00, 0x00 }; //SpeedyBee
             ulong ID = BitConverter.ToUInt64(bytes, 0);
 

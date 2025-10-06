@@ -9,7 +9,7 @@ namespace WindowsMotors.DataClasses
 	public class CustomRequest : MSPRequest
 	{
 		public UInt16 turnOn { get; set; } = 0;
-        public UInt16 printDebug { get; set; } = 0;
+        public UInt16 justThrottle { get; set; } = 0;
         public UInt16 delay { get; set; } = 3;
 
         public override byte[] ToByteArray()
@@ -21,9 +21,9 @@ namespace WindowsMotors.DataClasses
                                                              // Store the most significant byte
             byteArray[1] = (byte)((turnOn >> 8) & 0xFF); // MSB
 
-            byteArray[2] = (byte)(printDebug & 0xFF);       // LSB
+            byteArray[2] = (byte)(justThrottle & 0xFF);       // LSB
                                                              // Store the most significant byte
-            byteArray[3] = (byte)((printDebug >> 8) & 0xFF); // MSB
+            byteArray[3] = (byte)((justThrottle >> 8) & 0xFF); // MSB
 
             byteArray[4] = (byte)(delay & 0xFF);       // LSB
                                                              // Store the most significant byte

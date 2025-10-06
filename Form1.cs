@@ -2,23 +2,24 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.Common;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth;
+using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
-using System.Runtime.InteropServices.WindowsRuntime;
-using WindowsMotors.DataClasses;
-using System.Data.Common;
+using Windows.Graphics.Holographic;
 using Windows.Media.Protection.PlayReady;
-using WindowsMotors;
-using System.Threading;
 using Windows.Storage.Streams;
 using Windows.Web.Http.Headers;
-using Windows.Graphics.Holographic;
+using WindowsMotors;
+using WindowsMotors.DataClasses;
+using static WindowsMotors.OpenCVView;
 
 namespace WindowsFormsApp1
 {
@@ -38,7 +39,7 @@ namespace WindowsFormsApp1
             client = new MSPClient(false);
             client.onData += Client_onData;
 
-           
+
 
         }
 
@@ -129,7 +130,7 @@ namespace WindowsFormsApp1
                     Roll = ushort.Parse(txtRoll.Text),
                     Pitch = ushort.Parse(txtPitch.Text),
                     Yaw = ushort.Parse(txtYaw.Text),
-                    Aux5 = 1750,
+                    Aux4 = 1550,
                 });
             }
             catch (Exception ex)
@@ -141,13 +142,22 @@ namespace WindowsFormsApp1
         private void checkOn_CheckedChanged(object sender, EventArgs e)
         {
             ushort data = checkOn.Checked ? (ushort)1 : (ushort)0;
-
-            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = data, delay = ushort.Parse(txtDelay.Text) });
+            ushort justThrottle = checkJustThrottle.Checked ? (ushort)1 : (ushort)0;
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_RAW_RC, new MspSetRawRcRequest()
+            {
+                Aux1 = 1600,
+                Throttle = 1000,
+                Roll = 1500,
+                Pitch = 1500,
+                Yaw = 1500,
+                Aux5 = 1750,
+            });
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = data, justThrottle = justThrottle, delay = ushort.Parse(txtDelay.Text) });
         }
 
         private void buttonStop_Click(object sender, EventArgs e)
         {
-            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = 0,  delay = 1 });
+            client.SendCommand(MSPClient.MSPCommand.MSP_SET_TEST, new CustomRequest() { turnOn = 0, delay = 1 });
             client.SendCommand(MSPClient.MSPCommand.MSP_SET_RAW_RC, new MspSetRawRcRequest()
             {
                 Aux1 = ushort.Parse(txtAux1.Text),
@@ -212,34 +222,71 @@ namespace WindowsFormsApp1
 
         private void buttonView_Click(object sender, EventArgs e)
         {
-            var view = new WindowsMotors.OpenCVView(
-                onnxPath: "config_files/yolov5s.onnx",
-                classesPath: "config_files/classes.txt",
-                cameraIndex: 1,
-                gstreamerPipeline: null,
-                showWindow: true);
+            bool useModel = false;
+            if (useModel)
+            {
+                var view = new WindowsMotors.OpenCVView(
+                    onnxPath: "config_files/yolov5s.onnx",
+                    classesPath: "config_files/classes.txt",
+                    cameraIndex: 1,
+                    gstreamerPipeline: null,
+                    showWindow: true,
+                    justDisplay: true);
 
-            view.OnDetect += View_OnDetect;
+                view.OnDetect += View_OnDetect;
 
-            view.Start();
+                view.Start();
+            }
+            else
+            {
+                VisionTracker tracker = new VisionTracker();
+                tracker.OnDetect += Tracker_OnDetect;
+                tracker.Start();
+            }
         }
 
         private static short frameID = 0;
+
+        private void Tracker_OnDetect(OpenCvSharp.Mat img, ObjectInfo info)
+        {
+            if (info.Detected)
+            {
+                if (frameID == short.MaxValue)
+                {
+                    frameID = 0;
+                }
+                frameID++;
+                int deltaYaw = img.Width / 2 - (info.Bbox.Left + info.Bbox.Width / 2);
+                int deltaPitch = (info.Bbox.Top + info.Bbox.Height / 2) - img.Height / 2 - 160;
+
+                //client.SendCommand(MSPClient.MSPCommand.MSP_SET_AUTOPILOT_DATA, new MspSetAutopilotDataRequest()
+                //{
+                //    DeltaYaw = (short)deltaYaw,
+                //    DeltaPitch = (short)deltaPitch,
+                //    InitialYaw = 10,
+                //    InitialPitch = 100,
+                //    FrameID = frameID,
+                //    ModeID = 1
+
+                //});
+                //Thread.Sleep(80);
+            }
+        }
 
         private void View_OnDetect(OpenCvSharp.Mat img, List<OpenCVView.Detection> detections, List<string> classNames)
         {
             bool isDetected = false;
             foreach (var detection in detections)
             {
-                if (detection.ClassId == 74)
+                if (detection.ClassId == 74) //74 - clock, 41- cup
                 {
                     if (frameID == short.MaxValue)
                     {
                         frameID = 0;
                     }
-                    frameID ++;
+                    frameID++;
                     int deltaYaw = img.Width / 2 - (detection.Box.Left + detection.Box.Width / 2);
-                    int deltaPitch =  (detection.Box.Top + detection.Box.Height / 2) - img.Height / 2 - 160;
+                    int deltaPitch = (detection.Box.Top + detection.Box.Height / 2) - img.Height / 2 - 160;
 
                     this.Invoke(new Action(() =>
                     {
@@ -250,12 +297,23 @@ namespace WindowsFormsApp1
                     {
                         DeltaYaw = (short)deltaYaw,
                         DeltaPitch = (short)deltaPitch,
-                        InitialYaw = 100,
+                        InitialYaw = 10,
                         InitialPitch = 100,
                         FrameID = frameID,
                         ModeID = 1
-                        
+
                     });
+
+                    client.SendCommand(MSPClient.MSPCommand.MSP_SET_RAW_RC, new MspSetRawRcRequest()
+                    {
+                        Aux1 = ushort.Parse(txtAux1.Text),
+                        Throttle = ushort.Parse(txtTrottle.Text),//(ushort)PositionAdjuster.adjustThrottle((short)deltaPitch),
+                        Roll = ushort.Parse(txtRoll.Text),
+                        Pitch = ushort.Parse(txtPitch.Text),
+                        Yaw = checkJustThrottle.Checked ? (ushort)1500 : (ushort)PositionAdjuster.adjustYaw((short)deltaYaw, 100),
+                        Aux5 = 1500,
+                    });
+
                     isDetected = true;
                     Thread.Sleep(80);
 
@@ -267,6 +325,6 @@ namespace WindowsFormsApp1
             }
 
         }
- 
+
     }
 }
