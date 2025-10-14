@@ -257,15 +257,17 @@ namespace WindowsFormsApp1
                 }
                 frameID++;
                 int deltaYaw = img.Width / 2  - (info.Bbox.Left + info.Bbox.Width / 2);
-                int deltaPitch = (info.Bbox.Top + info.Bbox.Height / 2) - img.Height / 2 - 160;
-                int deltaRoll = img.Width / 2 - (info.Bbox.Left + info.Bbox.Width / 2);
+                int deltaPitch = (info.Bbox.Top + info.Bbox.Height / 2) - img.Height / 2;
+                int deltaRoll = -(img.Width / 2 - (info.Bbox.Left + info.Bbox.Width / 2));
 
                 client.SendCommand(MSPClient.MSPCommand.MSP_SET_AUTOPILOT_DATA, new MspSetAutopilotDataRequest()
                 {
                     DeltaYaw = (short)deltaYaw,
                     DeltaPitch = (short)deltaPitch,
+                    DeltaRoll = (short)deltaRoll,
                     InitialYaw = 10,
-                    InitialPitch = 100,
+                    InitialPitch = 0,
+                    InitialRoll = 20,
                     FrameID = frameID,
                     ModeID = 1
 

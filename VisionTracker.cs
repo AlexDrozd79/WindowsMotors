@@ -237,7 +237,7 @@ namespace WindowsFormsApp1
                 string outFile = "C:\\My\\WindowsMotors\\output.avi";
                 int fourcc = FourCC.XVID;          // або FourCC.MJPG
                 double fps = 30.0;
-                Size frameSize = new Size(1280, 720);
+                Size frameSize = new Size(640, 480);
                 var writer = new VideoWriter(outFile, fourcc, fps, frameSize, true);
                 if (!writer.IsOpened())
                 {
