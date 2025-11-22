@@ -36,7 +36,7 @@ namespace WindowsFormsApp1
         private void Form1_Load(object sender, EventArgs e)
         {
             cmbCommand.SelectedIndex = 0;
-            client = new MSPClient(false);
+            client = new MSPClient(true);
             client.onData += Client_onData;
 
 
@@ -222,7 +222,7 @@ namespace WindowsFormsApp1
 
         private void buttonView_Click(object sender, EventArgs e)
         {
-            bool useModel = false;
+            bool useModel = true;
             if (useModel)
             {
                 var view = new WindowsMotors.OpenCVView(
@@ -231,7 +231,7 @@ namespace WindowsFormsApp1
                     cameraIndex: 1,
                     gstreamerPipeline: null,
                     showWindow: true,
-                    justDisplay: true);
+                    justDisplay: false);
 
                 view.OnDetect += View_OnDetect;
 
@@ -281,7 +281,7 @@ namespace WindowsFormsApp1
             bool isDetected = false;
             foreach (var detection in detections)
             {
-                if (detection.ClassId == 74) //74 - clock, 41- cup
+                if (detection.ClassId == 41) //74 - clock, 41- cup
                 {
                     if (frameID == short.MaxValue)
                     {

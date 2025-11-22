@@ -152,7 +152,6 @@ namespace WindowsMotors
 
 
                 int frameCount = 0;
-                int totalFrames = 0;
                 double fpsNow = -1;
                 var tick = DateTime.UtcNow;
 
@@ -184,7 +183,7 @@ namespace WindowsMotors
 
                    
 
-                    frameCount++; totalFrames++;
+                    frameCount++; 
                     var elapsed = (DateTime.UtcNow - tick).TotalMilliseconds;
                     if (elapsed >= 1000.0)
                     {
@@ -245,6 +244,7 @@ namespace WindowsMotors
 
             try
             {
+
                 net.SetPreferableBackend(Backend.CUDA);
                 net.SetPreferableTarget(Target.CUDA_FP16);
             }

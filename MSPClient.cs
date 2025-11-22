@@ -74,7 +74,7 @@ namespace WindowsMotors
             this.useSerial = useSerial;
             if (useSerial)
             {
-                InitSerialPort("COM3", 115200); // 150200);
+                InitSerialPort("COM4", 115200); // 150200);
             }
             else
             {
